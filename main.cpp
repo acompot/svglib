@@ -1,8 +1,6 @@
 #define _USE_MATH_DEFINES
 #include "svg.h"
 
-#include <cmath>
-
 using namespace std::literals;
 using namespace svg;
 
@@ -10,6 +8,7 @@ namespace shapes {
 
 class Triangle : public svg::Drawable {
 public:
+
   Triangle(svg::Point p1, svg::Point p2, svg::Point p3) : p1_(p1)  , p2_(p2)  , p3_(p3)  {}
 
     // Реализует метод Draw интерфейса svg::Drawable
@@ -28,7 +27,10 @@ public:
              scentr_(center),souter_rad_(outer_rad),sinner_rad_(inner_rad),
              snum_rays_(num_rays){}
     void Draw(svg::ObjectContainer& container) const override {
-          container.Add(CreateStar(scentr_,souter_rad_,sinner_rad_,snum_rays_));
+          Polyline p = CreateStar(scentr_,souter_rad_,sinner_rad_,snum_rays_);
+          p.SetFillColor("red");
+          p.SetStrokeColor("black");
+          container.Add(p);
     }
     virtual ~Star() = default;
 private:
@@ -54,12 +56,15 @@ private:
 };
 
 class Snowman : public svg::Drawable {
+
   public:
     Snowman(svg::Point p, double r) : centr_(p),radius_(r){}
     // Реализует метод Draw интерфейса svg::Drawable
     void Draw(svg::ObjectContainer& container) const override {
 
          svg::Circle cir1;
+         cir1.SetFillColor("rgb(240,240,240)");
+         cir1.SetStrokeColor("black");
          cir1.SetCenter(Point{centr_.x,(centr_.y+radius_*5.0)});
          cir1.SetRadius(2.0*radius_);
          container.Add(cir1);
@@ -95,6 +100,37 @@ void DrawPicture(const Container& container, svg::ObjectContainer& target) {
     using namespace std;
     DrawPicture(begin(container), end(container), target);
 }
+
+std::ostream& operator<<(std::ostream &out, StrokeLineJoin i)
+{
+
+    switch (i)
+    {
+        case StrokeLineJoin::ARCS:          return out << "arcs";
+        case StrokeLineJoin::BEVEL:         return out << "bevel";
+        case StrokeLineJoin::MITER:         return out << "miter";
+        case StrokeLineJoin::MITER_CLIP:    return out << "miter-clip";
+        case StrokeLineJoin::ROUND:         return out << "round";
+        default:                            return out << "";
+    }
+
+
+}
+
+std::ostream& operator<<(std::ostream &out, StrokeLineCap i)
+{
+
+    switch (i)
+    {
+        case StrokeLineCap::BUTT:    return out << "butt";
+        case StrokeLineCap::ROUND:   return out << "round";
+        case StrokeLineCap::SQUARE:  return out << "square";
+        default:                     return out << "";
+    }
+
+
+}
+
 int main() {
     using namespace svg;
         using namespace shapes;
@@ -109,9 +145,28 @@ int main() {
         picture.emplace_back(make_unique<Snowman>(Point{30, 20}, 10.0));
 
         svg::Document doc;
+
+
         // Так как документ реализует интерфейс ObjectContainer,
         // его можно передать в DrawPicture в качестве цели для рисования
         DrawPicture(picture, doc);
+
+
+           const Text base_text =  //
+               Text()
+                   .SetFontFamily("Verdana"s)
+                   .SetFontSize(12)
+                   .SetPosition({10, 100})
+                   .SetData("Happy New Year!"s);
+           doc.Add(Text{base_text}
+                          .SetStrokeColor("yellow"s)
+                          .SetFillColor("yellow"s)
+                          .SetStrokeLineJoin(StrokeLineJoin::ROUND)
+                          .SetStrokeLineCap(StrokeLineCap::ROUND)
+                          .SetStrokeWidth(3));
+              doc.Add(Text{base_text}.SetFillColor("red"s));
+
+
 
         // Выводим полученный документ в stdout
         doc.Render(cout);

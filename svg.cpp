@@ -29,6 +29,7 @@ void Circle::RenderObject(const RenderContext& context) const {
     auto& out = context.out;
     out << "<circle cx=\""sv << center_.x << "\" cy=\""sv << center_.y << "\" "sv;
     out << "r=\""sv << radius_ << "\" "sv;
+    RenderAttrs(out);
     out << "/>"sv;
 }
 
@@ -64,6 +65,7 @@ void Polyline::RenderObject(const RenderContext& context) const {
          out<<point.x <<","sv<<point.y;
     }
     out << "\""sv;
+    RenderAttrs(out);
     out << "/>"sv;
 
 
@@ -143,6 +145,7 @@ void Text::RenderObject(const RenderContext& context) const {
        out << " font-weight=\""sv << font_bold_  ;
        out <<  "\""sv;
     }
+    RenderAttrs(out);
     out <<  ">"sv;
     out << label_;
     out << "</text>"sv;

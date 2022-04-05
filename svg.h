@@ -7,10 +7,121 @@
 #include <list>
 #include <string_view>
 #include <algorithm>
-
+#include <optional>
+#include <vector>
+#include <cmath>
+#include <iostream>
 namespace svg {
+
+using Color = std::string;
+inline const Color NoneColor{"none"};
+
 class ObjectContainer;
 class Drawable;
+
+enum class StrokeLineCap {
+    BUTT,
+    ROUND,
+    SQUARE,
+};
+
+enum class StrokeLineJoin {
+    ARCS,
+    BEVEL,
+    MITER,
+    MITER_CLIP,
+    ROUND,
+};
+
+template <typename Owner>
+class PathProps {
+public:
+    Owner& SetFillColor(Color color) {
+        fill_color_ = std::move(color);
+        return AsOwner();
+    }
+    Owner& SetStrokeColor(Color color) {
+        stroke_color_ = std::move(color);
+        return AsOwner();
+    }
+
+    Owner& SetStrokeWidth(double width){
+         stroke_width_ = width;
+         return AsOwner();
+    }
+
+    Owner& SetStrokeLineCap(StrokeLineCap line_cap){
+        stroke_line_cap_str_ = ToStringStrokeLineCap(line_cap);
+        return AsOwner();
+    }
+
+    Owner& SetStrokeLineJoin(StrokeLineJoin line_join){
+          stroke_line_join_str_ = ToStringStrokeLineJoin(line_join);
+          return AsOwner();
+    }
+
+protected:
+    ~PathProps() = default;
+
+    void RenderAttrs(std::ostream& out) const {
+        using namespace std::literals;
+
+        if (fill_color_) {
+            out << " fill=\""sv << *fill_color_ << "\""sv;
+        }
+        if (stroke_color_) {
+            out << " stroke=\""sv << *stroke_color_ << "\""sv;
+        }
+        if (stroke_width_) {
+             out << " stroke-width=\""sv << *stroke_width_ << "\""sv;
+        }
+        if (stroke_line_cap_str_){
+             out << " stroke-linecap=\""sv << *stroke_line_cap_str_ << "\""sv;
+        }
+        if (stroke_line_join_str_){
+             out << " stroke-linejoin=\""sv << *stroke_line_join_str_<< "\""sv;
+        }
+
+    }
+
+private:
+    inline const char* ToStringStrokeLineCap(StrokeLineCap v)
+    {
+        switch (v)
+        {
+            case StrokeLineCap::BUTT:    return "butt";
+            case StrokeLineCap::ROUND:   return "round";
+            case StrokeLineCap::SQUARE:  return "square";
+            default:      return "";
+        }
+    }
+
+    inline const char* ToStringStrokeLineJoin(StrokeLineJoin v)
+    {
+        switch (v)
+        {
+            case StrokeLineJoin::ARCS:          return "arcs";
+            case StrokeLineJoin::BEVEL:         return "bevel";
+            case StrokeLineJoin::MITER:         return "miter";
+            case StrokeLineJoin::MITER_CLIP:    return "miter-clip";
+            case StrokeLineJoin::ROUND:         return "round";
+            default:            return "";
+        }
+    }
+
+    Owner& AsOwner() {
+        // static_cast безопасно преобразует *this к Owner&,
+        // если класс Owner — наследник PathProps
+        return static_cast<Owner&>(*this);
+    }
+
+    std::optional<Color> fill_color_;
+    std::optional<Color> stroke_color_;
+    std::optional<double>stroke_width_;
+    std::optional<std::string> stroke_line_cap_str_;
+    std::optional<std::string> stroke_line_join_str_;
+};
+
 
 struct Point {
     Point() = default;
@@ -72,7 +183,7 @@ private:
  * https://developer.mozilla.org/en-US/docs/Web/SVG/Element/circle
  */
 
-class Circle final : public Object {
+class Circle final : public Object , public PathProps<Circle> {
 public:
     Circle& SetCenter(Point center);
     Circle& SetRadius(double radius);
@@ -89,7 +200,7 @@ private:
  * Класс Polyline моделирует элемент <polyline> для отображения ломаных линий
  * https://developer.mozilla.org/en-US/docs/Web/SVG/Element/polyline
  */
-class Polyline final : public Object  {
+class Polyline final : public Object ,public PathProps<Polyline>  {
 public:
     // Добавляет очередную вершину к ломаной линии
     Polyline& AddPoint(Point point);
@@ -108,7 +219,7 @@ private:
  * Класс Text моделирует элемент <text> для отображения текста
  * https://developer.mozilla.org/en-US/docs/Web/SVG/Element/text
  */
-class Text final : public Object {
+class Text final : public Object,public PathProps<Text> {
 public:
     // Задаёт координаты опорной точки (атрибуты x и y)
     Text& SetPosition(Point pos);
