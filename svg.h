@@ -11,13 +11,55 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <variant>
 namespace svg {
+struct Rgb
+{
+    Rgb() = default;
+    Rgb(uint8_t r,uint8_t g,uint8_t b ) : red(r),green(g),blue(b){}
+    uint8_t red = 0;
+    uint8_t green = 0;
+    uint8_t blue = 0;
+};
 
-using Color = std::string;
-inline const Color NoneColor{"none"};
+struct Rgba
+{
+    Rgba() = default;
+    explicit Rgba(uint8_t r,uint8_t g,uint8_t b,double o ) : red(r),green(g),blue(b), opacity(o){}
+    uint8_t red = 0;
+    uint8_t green = 0;
+    uint8_t blue = 0;
+    double  opacity = 1.0;
+};
+
+
+
+using Color = std::variant<std::monostate,std::string,Rgb,Rgba>;
+inline const Color NoneColor{ "none" };
 
 class ObjectContainer;
 class Drawable;
+
+
+struct OstreamColor {
+
+    std::ostream& out;
+
+    void operator()(std::monostate) const {
+           out << "fill=\"" << "none" << "\"";;
+    }
+    void operator()(std::string color) const {
+         out << " fill=\"" << color << "\"";
+    }
+    void operator()(Rgb znac) const {
+          out << "fill=\"rgb(" << std::to_string(znac.red) << "," << std::to_string(znac.green) << "," <<std::to_string(znac.blue) << ")\"";
+    }
+    void operator()(Rgba znac) const {
+          out << "fill=\"rgba(" << std::to_string(znac.red) << "," << std::to_string(znac.green) << "," << std::to_string(znac.blue) <<"," << znac.opacity << ")\"";
+    }
+
+
+};
 
 enum class StrokeLineCap {
     BUTT,
@@ -40,7 +82,7 @@ public:
         fill_color_ = std::move(color);
         return AsOwner();
     }
-    Owner& SetStrokeColor(Color color) {
+    Owner& SetStrokeColor(std::string color) {
         stroke_color_ = std::move(color);
         return AsOwner();
     }
@@ -67,10 +109,11 @@ protected:
         using namespace std::literals;
 
         if (fill_color_) {
-            out << " fill=\""sv << *fill_color_ << "\""sv;
+//            out << " fill=\""sv << *fill_color_ << "\""sv;
+            std::visit(OstreamColor{out}, *fill_color_);
         }
         if (stroke_color_) {
-            out << " stroke=\""sv << *stroke_color_ << "\""sv;
+               out << " stroke=\""sv << *stroke_color_ << "\""sv;
         }
         if (stroke_width_) {
              out << " stroke-width=\""sv << *stroke_width_ << "\""sv;
@@ -116,7 +159,7 @@ private:
     }
 
     std::optional<Color> fill_color_;
-    std::optional<Color> stroke_color_;
+    std::optional<std::string> stroke_color_;
     std::optional<double>stroke_width_;
     std::optional<std::string> stroke_line_cap_str_;
     std::optional<std::string> stroke_line_join_str_;
@@ -282,11 +325,7 @@ public:
 
 private :
      ObjectContainer *obj_;
-  //   std::list<std::unique_ptr<Object>> figures_;
+ };
 
-
-
-
-};
 
 }  // namespace svg

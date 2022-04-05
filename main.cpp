@@ -1,6 +1,8 @@
 #define _USE_MATH_DEFINES
 #include "svg.h"
-
+#include <vector>
+#include  <memory>
+#include <cassert>
 using namespace std::literals;
 using namespace svg;
 
@@ -63,7 +65,7 @@ class Snowman : public svg::Drawable {
     void Draw(svg::ObjectContainer& container) const override {
 
          svg::Circle cir1;
-         cir1.SetFillColor("rgb(240,240,240)");
+         cir1.SetFillColor({});
          cir1.SetStrokeColor("black");
          cir1.SetCenter(Point{centr_.x,(centr_.y+radius_*5.0)});
          cir1.SetRadius(2.0*radius_);
@@ -106,7 +108,7 @@ std::ostream& operator<<(std::ostream &out, StrokeLineJoin i)
 
     switch (i)
     {
-        case StrokeLineJoin::ARCS:          return out << "arcs";
+        case StrokeLineJoin::ARCS:          return out << "arcs"sv;
         case StrokeLineJoin::BEVEL:         return out << "bevel";
         case StrokeLineJoin::MITER:         return out << "miter";
         case StrokeLineJoin::MITER_CLIP:    return out << "miter-clip";
@@ -131,12 +133,19 @@ std::ostream& operator<<(std::ostream &out, StrokeLineCap i)
 
 }
 
+// Выполняет линейную интерполяцию значения от from до to в зависимости от параметра t
+uint8_t Lerp(uint8_t from, uint8_t to, double t) {
+    return static_cast<uint8_t>(std::round((to - from) * t + from));
+}
+
 int main() {
-    using namespace svg;
+
+        using namespace svg;
         using namespace shapes;
         using namespace std;
 
         vector<unique_ptr<svg::Drawable>> picture;
+
 
         picture.emplace_back(make_unique<Triangle>(Point{100, 20}, Point{120, 50}, Point{80, 40}));
         // 5-лучевая звезда с центром {50, 20}, длиной лучей 10 и внутренним радиусом 4
