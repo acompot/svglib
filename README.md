@@ -1,1 +1,1 @@
-Библиотека которая рисует примитивы SVG :circle,polyline,
+Библиотека которая рисует примитивы SVG :circle,polyline,text
